@@ -2,26 +2,21 @@
 
 declare(strict_types=1);
 
-use Joomla\CMS\Application\AdministratorApplication;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
-use Joomla\CMS\Session\Session;
-use Joomla\Registry\Registry;
-use Rish\Module\RishBackup\Administrator\Helper\JobDirectory;
 
 defined('_JEXEC') or die;
 
-/** @var AdministratorApplication $app */
-/** @var Registry $params */
-/** @var stdClass $module */
+/** @var bool $directoryAvailable */
+/** @var array $labels */
+/** @var string $ajaxUrl */
+/** @var string $exportListId */
+/** @var string $cloudListId */
+/** @var string $token */
 
 $escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
-
-$configured = (string) $params->get('job_directory', '');
-$documentRoot = $app->getInput()->server->getString('DOCUMENT_ROOT', '');
-
-if (JobDirectory::availablePath($configured, $documentRoot) === null) :
+if (!$directoryAvailable) :
     ?>
     <div class="p-3">
         <p class="alert alert-warning mb-0"><?= $escape(Text::_('MOD_RISH_BACKUP_ERROR_DIRECTORY')) ?></p>
@@ -29,55 +24,10 @@ if (JobDirectory::availablePath($configured, $documentRoot) === null) :
     <?php
     return;
 endif;
-
-$assets = $app->getDocument()->getWebAssetManager();
-$assets->registerAndUseStyle(
-    'mod_rish_backup.dashboard',
-    'mod_rish_backup/dashboard.css',
-    ['version' => '1.5.1.2']
-);
-$assets->registerAndUseScript(
-    'mod_rish_backup.dashboard',
-    'mod_rish_backup/dashboard.js',
-    ['version' => '1.5.1.4'],
-    ['defer' => true]
-);
-
-$states = ['idle', 'queued', 'running', 'ready', 'failed'];
-$labels = [];
-
-foreach ($states as $state) {
-    $labels[$state] = Text::_('MOD_RISH_BACKUP_STATE_' . strtoupper($state));
-}
-
-$labels['error'] = Text::_('MOD_RISH_BACKUP_ERROR_NETWORK');
-$labels['confirmDelete'] = Text::_('MOD_RISH_BACKUP_CONFIRM_DELETE');
-$labels['downloadArchive'] = Text::_('MOD_RISH_BACKUP_DOWNLOAD_LABEL');
-$labels['deleteArchive'] = Text::_('MOD_RISH_BACKUP_DELETE_LABEL');
-$labels['noArchives'] = Text::_('MOD_RISH_BACKUP_EXPORT_EMPTY');
-$labels['noSnapshots'] = Text::_('MOD_RISH_BACKUP_CLOUD_EMPTY');
-$labels['cloudLoading'] = Text::_('MOD_RISH_BACKUP_CLOUD_LOADING');
-$labels['cloudNoList'] = Text::_('MOD_RISH_BACKUP_CLOUD_NO_LIST');
-$labels['cloudLoadFailed'] = Text::_('MOD_RISH_BACKUP_CLOUD_LOAD_FAILED');
-$labels['cloudLegacyEmpty'] = Text::_('MOD_RISH_BACKUP_CLOUD_LEGACY_EMPTY');
-$labels['cloudListOperation'] = Text::_('MOD_RISH_BACKUP_CLOUD_LIST_OPERATION');
-$labels['cloudFetchOperation'] = Text::_('MOD_RISH_BACKUP_CLOUD_FETCH_OPERATION');
-$labels['fetchSnapshot'] = Text::_('MOD_RISH_BACKUP_CLOUD_FETCH_LABEL');
-$labels['scheduleDaily'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_DAILY');
-$labels['scheduleCron'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_CRON');
-$labels['scheduleNotConfigured'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_NOT_CONFIGURED');
-$labels['scheduleUnknown'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_UNKNOWN');
-$labels['scheduleChecked'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_CHECKED');
-$labels['serverTimezone'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_SERVER_TIMEZONE');
-$labels['retryAt'] = Text::_('MOD_RISH_BACKUP_RETRY_AT');
-
-$ajaxUrl = 'index.php?option=com_ajax&module=rish_backup&module_id=' . (int) $module->id;
-$exportListId = 'rish-backup-local-' . (int) $module->id;
-$cloudListId = 'rish-backup-cloud-' . (int) $module->id;
 ?>
 <div class="p-3" data-rish-backup
     data-endpoint="<?= $escape($ajaxUrl) ?>"
-    data-token="<?= $escape(Session::getFormToken()) ?>"
+    data-token="<?= $escape($token) ?>"
     data-labels="<?= $escape(json_encode($labels, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) ?>">
     <p class="alert alert-danger mb-3" data-rish-error role="alert" hidden></p>
     <p class="alert alert-warning mb-3" data-rish-disabled hidden><?= $escape(Text::_('MOD_RISH_BACKUP_DISABLED')) ?></p>
