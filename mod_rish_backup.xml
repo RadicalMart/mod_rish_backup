@@ -2,6 +2,7 @@
 <extension type="module" client="administrator" method="upgrade">
     <name>mod_rish_backup</name>
     <author>RISH</author>
+    <creationDate>2026-11-13</creationDate>
     <version>1.5.1</version>
     <description>MOD_RISH_BACKUP_XML_DESCRIPTION</description>
     <namespace path="src">Rish\Module\RishBackup</namespace>
