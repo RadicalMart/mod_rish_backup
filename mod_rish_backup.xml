@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="module" client="administrator" method="upgrade">
+    <name>mod_rish_backup</name>
+    <author>RISH</author>
+    <version>1.5.1</version>
+    <description>MOD_RISH_BACKUP_XML_DESCRIPTION</description>
+    <namespace path="src">Rish\Module\RishBackup</namespace>
+    <files>
+        <folder module="mod_rish_backup">services</folder>
+        <folder>src</folder>
+        <folder>tmpl</folder>
+    </files>
+    <media destination="mod_rish_backup" folder="media">
+        <folder>css</folder>
+        <folder>js</folder>
+    </media>
+    <languages>
+        <language tag="en-GB">language/en-GB/mod_rish_backup.ini</language>
+        <language tag="en-GB">language/en-GB/mod_rish_backup.sys.ini</language>
+        <language tag="ru-RU">language/ru-RU/mod_rish_backup.ini</language>
+        <language tag="ru-RU">language/ru-RU/mod_rish_backup.sys.ini</language>
+    </languages>
+    <config>
+        <fields name="params">
+            <fieldset name="basic">
+                <field
+                    name="job_directory"
+                    type="RishJobDirectory"
+                    addfieldprefix="Rish\Module\RishBackup\Administrator\Field"
+                    label="MOD_RISH_BACKUP_JOB_DIRECTORY"
+                    description="MOD_RISH_BACKUP_JOB_DIRECTORY_DESC"
+                    hint="/var/www/user/backups/example.com"
+                />
+            </fieldset>
+        </fields>
+    </config>
+</extension>

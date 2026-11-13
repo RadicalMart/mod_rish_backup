@@ -1,0 +1,106 @@
+[data-rish-backup] {
+    contain: inline-size;
+    min-width: 0;
+}
+
+[data-rish-backup] .rish-backup-section ~ .rish-backup-section {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: var(--border-width, 1px) solid var(--border-color, var(--bs-border-color, currentColor));
+}
+
+[data-rish-backup] .rish-backup-header,
+[data-rish-backup] .rish-backup-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+}
+
+[data-rish-backup] .rish-backup-header {
+    justify-content: space-between;
+    column-gap: 1rem;
+}
+
+[data-rish-backup] .rish-backup-table-wrap {
+    margin-top: .75rem;
+}
+
+[data-rish-backup] .rish-backup-table-wrap:focus-visible {
+    outline: var(--focus-ring-width, .25rem) solid var(--focus-ring-color, var(--bs-focus-ring-color, currentColor));
+    outline-offset: -2px;
+}
+
+[data-rish-backup] .rish-backup-table {
+    table-layout: fixed;
+    width: 100%;
+    min-width: 25rem;
+}
+
+[data-rish-backup] .rish-backup-table th:first-child {
+    width: 42%;
+}
+
+[data-rish-backup] .rish-backup-table th:nth-child(2) {
+    width: 16%;
+}
+
+[data-rish-backup] .rish-backup-table th,
+[data-rish-backup] .rish-backup-table td {
+    padding: .5rem .75rem;
+}
+
+[data-rish-backup] .rish-backup-table th {
+    background-color: var(--tertiary-bg, var(--bs-tertiary-bg));
+    font-size: .875rem;
+}
+
+[data-rish-backup] .rish-backup-table td {
+    font-variant-numeric: tabular-nums;
+}
+
+[data-rish-backup] .rish-backup-table .rish-backup-actions {
+    flex-wrap: nowrap;
+}
+
+[data-rish-backup] .rish-backup-table .btn {
+    white-space: nowrap;
+}
+
+[data-rish-backup] .rish-backup-status {
+    margin: .5rem 0 0;
+    color: var(--secondary-color, var(--bs-secondary-color, inherit));
+    font-size: .875rem;
+}
+
+[data-rish-backup] .rish-backup-status[data-state="failed"] {
+    color: var(--danger-text-emphasis, var(--bs-danger-text-emphasis, inherit));
+}
+
+[data-rish-backup] .rish-backup-status[data-state="queued"],
+[data-rish-backup] .rish-backup-status[data-state="running"] {
+    color: var(--body-color, var(--bs-body-color, inherit));
+}
+
+@media (max-width: 575.98px) {
+    [data-rish-backup] {
+        max-inline-size: calc(100vw - 2rem);
+    }
+
+    [data-rish-backup] .rish-backup-table {
+        min-width: 23rem;
+    }
+
+    [data-rish-backup] .rish-backup-table th:first-child {
+        width: 37%;
+    }
+
+    [data-rish-backup] .rish-backup-table th:nth-child(2) {
+        width: 19%;
+    }
+
+    [data-rish-backup] .rish-backup-table th,
+    [data-rish-backup] .rish-backup-table td {
+        padding-inline: .375rem;
+    }
+}
