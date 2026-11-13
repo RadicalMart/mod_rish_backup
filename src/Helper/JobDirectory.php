@@ -119,8 +119,7 @@ final class JobDirectory
                 && !self::isUnder($release, $userHome . '/backups')
                 && !self::isUnder($release, $userHome . '/www/backups')
                 && self::isUnder($joomlaRoot, $release) && self::isUnder($publicRoot, $release)
-                && (self::isUnder($joomlaRoot, $publicRoot) || self::isUnder($publicRoot, $joomlaRoot))
-                && @realpath($logicalJobs) === $logicalJobs) {
+                && (self::isUnder($joomlaRoot, $publicRoot) || self::isUnder($publicRoot, $joomlaRoot))) {
                 return $logicalJobs;
             }
         }
@@ -146,7 +145,8 @@ final class JobDirectory
     public function status(): array
     {
         $archives = $this->listExports();
-        $result = ['accepts_requests' => $this->acceptsRequests(), 'archives' => $archives];
+        $serverTime = time();
+        $result = ['accepts_requests' => $this->acceptsRequests(), 'archives' => $archives, 'server_time' => $serverTime];
 
         foreach (['backup', 'export', 'delete'] as $type) {
             $result[$type] = $this->readStatus($type);
@@ -166,12 +166,12 @@ final class JobDirectory
                 try {
                     $catalog = $this->readCloudCatalog();
                     $result['cloud'] = $catalog + [
-                        'server_time' => time(),
+                        'server_time' => $serverTime,
                         'list' => $this->readStatus('cloud-list'),
                         'fetch' => $this->cloudFetchStatus($catalog['snapshots']),
                     ];
                 } catch (RuntimeException $error) {
-                    $result['cloud'] = ['error' => $error->getMessage(), 'server_time' => time()];
+                    $result['cloud'] = ['error' => $error->getMessage(), 'server_time' => $serverTime];
                 }
             }
         }
@@ -185,15 +185,20 @@ final class JobDirectory
 
         $exportBefore = $type === 'export' ? $this->readStatus('export', false) : null;
         $activeType = null;
+        $nextAt = 0;
 
         foreach (self::TYPES as $jobType) {
-            if (in_array($this->readStatus($jobType)['state'], ['queued', 'running'], true)) {
+            $job = $this->readStatus($jobType);
+            if (in_array($job['state'], ['queued', 'running'], true)) {
                 $activeType = $jobType;
                 break;
             }
+            if ($jobType === $type) {
+                $nextAt = $job['next_at'] ?? 0;
+            }
         }
 
-        if ($activeType === null) {
+        if ($activeType === null && $nextAt <= time()) {
             $this->queue($this->markerPath($type));
         }
 
@@ -341,13 +346,15 @@ final class JobDirectory
 
         $state = $schedule['state'] ?? null;
         $jobs = $schedule['jobs'] ?? null;
+        $checkedAt = $schedule['checked_at'] ?? null;
+        $checked = is_int($checkedAt) && $checkedAt > 0 ? ['checked_at' => $checkedAt] : [];
 
         if ($state === 'not_configured' && $jobs === []) {
-            return ['state' => $state, 'jobs' => []];
+            return ['state' => $state, 'jobs' => []] + $checked;
         }
 
         if ($state !== 'configured' || !is_array($jobs) || !array_is_list($jobs) || $jobs === []) {
-            return $unknown;
+            return $unknown + $checked;
         }
 
         $entries = [];
@@ -360,7 +367,7 @@ final class JobDirectory
                 || preg_match('~\A(?:@[a-z]+|[0-9a-z*,/\~\-]+(?: [0-9a-z*,/\~\-]+){4})\z~iD', $expression) !== 1
                 || ($timezone !== null && (!is_string($timezone) || strlen($timezone) > 100
                     || preg_match('~\A[A-Za-z0-9_.+\-/]+\z~D', $timezone) !== 1))) {
-                return $unknown;
+                return $unknown + $checked;
             }
 
             $entry = ['expression' => $expression];
@@ -370,7 +377,7 @@ final class JobDirectory
             $entries[] = $entry;
         }
 
-        return ['state' => $state, 'jobs' => $entries];
+        return ['state' => $state, 'jobs' => $entries] + $checked;
     }
 
     private function checkCloudRequestsEnabled(): void
@@ -387,11 +394,7 @@ final class JobDirectory
         $error = Text::_('MOD_RISH_BACKUP_ERROR_CLOUD_CATALOG');
         $catalog = $this->readJson('cloud-catalog', $error, true);
 
-        if ($catalog === null) {
-            return ['updated_at' => null, 'snapshots' => [], 'legacy' => false];
-        }
-
-        if (!array_key_exists('legacy', $catalog) && $this->isTrustedFile($this->fileStat($this->root . '/cloud-fetch.lock'))) {
+        if (($catalog['schema'] ?? null) !== 2) {
             return ['updated_at' => null, 'snapshots' => [], 'legacy' => false];
         }
 
@@ -485,11 +488,13 @@ final class JobDirectory
             }
 
             $id = $match[1];
+            $deleteQueuedAt = $this->queuedMarker($this->deleteMarkerPath($id), false);
             $archives[] = [
                 'id' => $id,
                 'created_at' => substr($id, 0, 10) . ' ' . str_replace('-', ':', substr($id, 11, 8)),
                 'size' => $stat['size'],
-                'delete_queued' => $this->queuedMarker($this->deleteMarkerPath($id), false) !== null,
+                'delete_queued' => $deleteQueuedAt !== null,
+                'delete_queued_at' => $deleteQueuedAt,
             ];
         }
 

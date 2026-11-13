@@ -39,7 +39,7 @@ $assets->registerAndUseStyle(
 $assets->registerAndUseScript(
     'mod_rish_backup.dashboard',
     'mod_rish_backup/dashboard.js',
-    ['version' => '1.5.1.3'],
+    ['version' => '1.5.1.4'],
     ['defer' => true]
 );
 
@@ -67,7 +67,9 @@ $labels['scheduleDaily'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_DAILY');
 $labels['scheduleCron'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_CRON');
 $labels['scheduleNotConfigured'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_NOT_CONFIGURED');
 $labels['scheduleUnknown'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_UNKNOWN');
+$labels['scheduleChecked'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_CHECKED');
 $labels['serverTimezone'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_SERVER_TIMEZONE');
+$labels['retryAt'] = Text::_('MOD_RISH_BACKUP_RETRY_AT');
 
 $ajaxUrl = 'index.php?option=com_ajax&module=rish_backup&module_id=' . (int) $module->id;
 $exportListId = 'rish-backup-local-' . (int) $module->id;
@@ -79,6 +81,7 @@ $cloudListId = 'rish-backup-cloud-' . (int) $module->id;
     data-labels="<?= $escape(json_encode($labels, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) ?>">
     <p class="alert alert-danger mb-3" data-rish-error role="alert" hidden></p>
     <p class="alert alert-warning mb-3" data-rish-disabled hidden><?= $escape(Text::_('MOD_RISH_BACKUP_DISABLED')) ?></p>
+    <p class="alert alert-warning mb-3" data-rish-queue-warning role="status" hidden><?= $escape(Text::_('MOD_RISH_BACKUP_QUEUE_WARNING')) ?></p>
     <section class="rish-backup-section" aria-labelledby="<?= $escape($cloudListId) ?>">
         <header class="rish-backup-header">
             <h3 class="h5 mb-0" id="<?= $escape($cloudListId) ?>"><?= $escape(Text::_('MOD_RISH_BACKUP_CLOUD_LIST')) ?></h3>

@@ -4,6 +4,7 @@
     const pollInterval = 5000;
     const cloudCacheLifetime = 300;
     const cloudRefreshCooldown = 30;
+    const queueWarningAge = 300;
     const activeStates = new Set(['queued', 'running']);
     const sizeUnits = ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'terabyte', 'petabyte'];
 
@@ -17,10 +18,16 @@
         }).format(bytes / 1000 ** unit);
     };
 
+    const formatTimestamp = (timestamp) => {
+        const date = new Date(timestamp * 1000);
+        return timestamp && !Number.isNaN(date.valueOf()) ? date.toLocaleString() : '';
+    };
+
     for (const dashboard of document.querySelectorAll('[data-rish-backup]')) {
         const labels = JSON.parse(dashboard.dataset.labels);
         const alert = dashboard.querySelector('[data-rish-error]');
         const disabled = dashboard.querySelector('[data-rish-disabled]');
+        const queueWarning = dashboard.querySelector('[data-rish-queue-warning]');
         const body = dashboard.querySelector('[data-rish-export-rows]');
         const emptyRow = body.querySelector('[data-rish-export-empty]');
         const template = dashboard.querySelector('[data-rish-export-row]');
@@ -79,14 +86,13 @@
             return result.data;
         };
 
-        const renderStatus = (element, record, operation) => {
+        const renderStatus = (element, record, operation, note) => {
             const { state, updated_at: updated, message } = record;
-            const date = new Date(updated * 1000);
-            const timestamp = !activeStates.has(state) && updated && !Number.isNaN(date.valueOf()) ? date.toLocaleString() : '';
+            const timestamp = !activeStates.has(state) ? formatTimestamp(updated) : '';
             const detail = state === 'failed' || !message
                 ? [operation, labels[state] || labels.error, message]
                 : [message];
-            const line = [...detail, timestamp].filter(Boolean).join(' · ');
+            const line = [...detail, timestamp, note].filter(Boolean).join(' · ');
 
             element.dataset.state = state;
             if (element.textContent !== line) {
@@ -169,6 +175,11 @@
                 }).join(' · ');
             } else {
                 message = schedule.state === 'not_configured' ? labels.scheduleNotConfigured : labels.scheduleUnknown;
+            }
+
+            const checked = formatTimestamp(schedule.checked_at);
+            if (checked) {
+                message += ' · ' + labels.scheduleChecked.replace('%s', checked);
             }
 
             if (scheduleStatus.textContent !== message) {
@@ -276,13 +287,29 @@
         };
 
         const render = (data, willRefresh) => {
+            const serverTime = data.server_time ?? data.cloud?.server_time ?? Date.now() / 1000;
             const creating = activeStates.has(data.backup.state) || activeStates.has(data.export.state);
-            backupButton.disabled = creating || !data.accepts_requests;
-            exportButton.disabled = creating || !data.accepts_requests;
+            const backupPaused = data.backup.next_at > serverTime;
+            const exportPaused = data.export.next_at > serverTime;
+            const jobs = [data.backup, data.export, data.delete, data.cloud?.list, data.cloud?.fetch];
+            const longWait = (queuedAt) => queuedAt > 0 && serverTime - queuedAt >= queueWarningAge;
+            const longQueuedJob = jobs.some(job => job?.state === 'queued' && longWait(job.updated_at))
+                || data.archives.some(archive => longWait(archive.delete_queued_at));
+            queueWarning.hidden = !data.accepts_requests || jobs.some(job => job?.state === 'running')
+                || !longQueuedJob;
+
+            backupButton.disabled = creating || backupPaused || !data.accepts_requests;
+            exportButton.disabled = creating || exportPaused || !data.accepts_requests;
             backupStatus.hidden = data.backup.state === 'idle';
-            renderStatus(backupStatus, data.backup);
+            const backupRetry = backupPaused && !activeStates.has(data.backup.state)
+                ? labels.retryAt.replace('%s', formatTimestamp(data.backup.next_at))
+                : '';
+            renderStatus(backupStatus, data.backup, undefined, backupRetry);
             exportStatus.hidden = data.export.state === 'idle';
-            renderStatus(exportStatus, data.export);
+            const exportRetry = exportPaused && !activeStates.has(data.export.state)
+                ? labels.retryAt.replace('%s', formatTimestamp(data.export.next_at))
+                : '';
+            renderStatus(exportStatus, data.export, undefined, exportRetry);
             disabled.hidden = data.accepts_requests;
             deleteStatus.hidden = data.delete.state === 'idle';
             renderStatus(deleteStatus, data.delete);
