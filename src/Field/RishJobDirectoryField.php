@@ -7,12 +7,12 @@ namespace Rish\Module\RishBackup\Administrator\Field;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Form\Field\TextField;
 use Joomla\CMS\Language\Text;
-use Rish\Module\RishBackup\Administrator\Helper\JobDirectory;
+use Rish\Module\RishBackup\Administrator\Service\BackupDirectoryService;
 use RuntimeException;
 
 defined('_JEXEC') or die;
 
-final class RishJobDirectoryField extends TextField
+class RishJobDirectoryField extends TextField
 {
     protected $type = 'RishJobDirectory';
 
@@ -32,7 +32,7 @@ final class RishJobDirectoryField extends TextField
         $documentRoot = Factory::getApplication()->getInput()->server->getString('DOCUMENT_ROOT', '');
 
         try {
-            $directory = JobDirectory::fromConfiguration($configured, $documentRoot);
+            $directory = BackupDirectoryService::fromConfiguration($configured, $documentRoot);
         } catch (RuntimeException) {
             $directory = null;
         }
