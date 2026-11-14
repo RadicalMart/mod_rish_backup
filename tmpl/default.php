@@ -58,11 +58,12 @@ endif;
                             <th scope="col"><?= $escape(Text::_('MOD_RISH_BACKUP_EXPORT_DATE')) ?></th>
                             <th scope="col"><?= $escape(Text::_('MOD_RISH_BACKUP_EXPORT_SIZE')) ?></th>
                             <th scope="col"><?= $escape(Text::_('MOD_RISH_BACKUP_EXPORT_ACTIONS')) ?></th>
+                            <th scope="col"><?= $escape(Text::_('MOD_RISH_BACKUP_CLOUD_STATUS')) ?></th>
                         </tr>
                     </thead>
                     <tbody data-rish-cloud-rows>
                         <tr data-rish-cloud-empty>
-                            <td colspan="3"><?= $escape(Text::_('MOD_RISH_BACKUP_CLOUD_LOADING')) ?></td>
+                            <td colspan="4"><?= $escape(Text::_('MOD_RISH_BACKUP_CLOUD_LOADING')) ?></td>
                         </tr>
                     </tbody>
                 </table>
@@ -80,7 +81,9 @@ endif;
                 <button type="button" class="btn btn-sm btn-outline-primary" data-rish-cloud-fetch disabled>
                     <?= $escape(Text::_('MOD_RISH_BACKUP_CLOUD_FETCH')) ?>
                 </button>
-                <p class="rish-backup-status" data-rish-cloud-row-status role="status" hidden></p>
+            </td>
+            <td>
+                <span class="rish-backup-status" data-rish-cloud-row-status role="status" hidden></span>
             </td>
         </tr>
     </template>

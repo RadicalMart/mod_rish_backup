@@ -1,7 +1,10 @@
+import JoomlaDialog from 'joomla.dialog';
+
 (() => {
     'use strict';
 
     const pollInterval = 5000;
+    const notificationDuration = 25000;
     const cloudCacheLifetime = 300;
     const cloudRefreshCooldown = 30;
     const queueWarningAge = 300;
@@ -18,9 +21,9 @@
         }).format(bytes / 1000 ** unit);
     };
 
-    const formatTimestamp = (timestamp) => {
+    const formatTimestamp = (timestamp, options) => {
         const date = new Date(timestamp * 1000);
-        return timestamp && !Number.isNaN(date.valueOf()) ? date.toLocaleString() : '';
+        return timestamp && !Number.isNaN(date.valueOf()) ? date.toLocaleString(undefined, options) : '';
     };
 
     for (const dashboard of document.querySelectorAll('[data-rish-backup]')) {
@@ -53,6 +56,7 @@
         let posting = false;
         let autoRefreshChecked = false;
         let previousBackup;
+        let previousLocalJobs;
         let refreshAfterBackup = 0;
 
         const request = async (action, method, id, signal) => {
@@ -100,6 +104,32 @@
             }
         };
 
+        const notifyLocalSuccess = (data) => {
+            const jobs = [data.export, data.delete];
+            const completed = jobs.filter((job, index) => {
+                const previous = previousLocalJobs?.[index];
+                return job.state === 'ready' && job.message && previous
+                    && (!job.archive_id || rows.has(job.archive_id))
+                    && (previous.state !== 'ready' || previous.updated_at !== job.updated_at
+                        || previous.archive_id !== job.archive_id);
+            });
+            previousLocalJobs = jobs;
+
+            if (completed.length === 0) {
+                return;
+            }
+
+            const messages = document.createElement('div');
+            messages.className = 'mt-3';
+            deleteStatus.after(messages);
+            const text = document.createElement('span');
+            Joomla.renderMessages({ message: completed.map(job => {
+                text.textContent = job.message;
+                return text.innerHTML;
+            }) }, messages, false, notificationDuration);
+            messages.firstElementChild.addEventListener('joomla.alert.closed', () => messages.remove(), { once: true });
+        };
+
         const renderArchives = (archives, canDelete) => {
             const current = new Set();
             let next = body.firstElementChild;
@@ -121,8 +151,8 @@
                     download.setAttribute('aria-label', labels.downloadArchive.replace('%s', created));
                     button.setAttribute('aria-label', labels.deleteArchive.replace('%s', created));
 
-                    button.addEventListener('click', () => {
-                        if (window.confirm(labels.confirmDelete.replace('%s', created))) {
+                    button.addEventListener('click', async () => {
+                        if (await JoomlaDialog.confirm(labels.confirmDelete.replace('%s', created))) {
                             refresh('delete', 'POST', id);
                         }
                     });
@@ -225,7 +255,20 @@
                 row.button.disabled = !canFetch;
                 row.status.hidden = fetchStatus?.snapshot_id !== id || fetchStatus.state === 'idle';
                 if (!row.status.hidden) {
-                    renderStatus(row.status, fetchStatus);
+                    const downloaded = fetchStatus.state === 'ready';
+                    row.status.title = downloaded ? formatTimestamp(fetchStatus.updated_at) : '';
+                    if (downloaded) {
+                        const time = formatTimestamp(fetchStatus.updated_at, {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hourCycle: 'h23',
+                        });
+                        renderStatus(row.status, { state: 'ready', message: labels.cloudDownloaded }, undefined, time);
+                    } else {
+                        renderStatus(row.status, fetchStatus);
+                    }
                 }
 
                 if (row.element !== next) {
@@ -305,15 +348,24 @@
                 ? labels.retryAt.replace('%s', formatTimestamp(data.backup.next_at))
                 : '';
             renderStatus(backupStatus, data.backup, undefined, backupRetry);
-            exportStatus.hidden = data.export.state === 'idle';
             const exportRetry = exportPaused && !activeStates.has(data.export.state)
                 ? labels.retryAt.replace('%s', formatTimestamp(data.export.next_at))
                 : '';
-            renderStatus(exportStatus, data.export, undefined, exportRetry);
+            if (data.export.state === 'ready') {
+                exportStatus.hidden = !exportRetry;
+                exportStatus.dataset.state = data.export.state;
+                if (exportStatus.textContent !== exportRetry) {
+                    exportStatus.textContent = exportRetry;
+                }
+            } else {
+                exportStatus.hidden = data.export.state === 'idle';
+                renderStatus(exportStatus, data.export, undefined, exportRetry);
+            }
             disabled.hidden = data.accepts_requests;
-            deleteStatus.hidden = data.delete.state === 'idle';
+            deleteStatus.hidden = ['idle', 'ready'].includes(data.delete.state);
             renderStatus(deleteStatus, data.delete);
             renderArchives(data.archives, data.accepts_requests && data.delete.state !== 'running');
+            notifyLocalSuccess(data);
             renderSchedule(data.schedule);
             renderCloud(data.cloud, data.accepts_requests, willRefresh);
         };

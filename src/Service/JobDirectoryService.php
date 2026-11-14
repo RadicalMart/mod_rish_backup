@@ -62,10 +62,16 @@ class JobDirectoryService
             if ($this->hasCloudCapability()) {
                 try {
                     $catalog = $this->readCloudCatalog();
+                    $fetch = $this->cloudFetchStatus($catalog['snapshots']);
+                    if ($fetch['state'] === 'ready' && !in_array($fetch['archive_id'] ?? null, array_column($archives, 'id'), true)) {
+                        $fetch = ['state' => 'idle', 'updated_at' => null, 'message' => '']
+                            + array_intersect_key($fetch, ['next_at' => true]);
+                    }
+
                     $result['cloud'] = $catalog + [
                         'server_time' => $serverTime,
                         'list' => $this->readStatus('cloud-list'),
-                        'fetch' => $this->cloudFetchStatus($catalog['snapshots']),
+                        'fetch' => $fetch,
                     ];
                 } catch (RuntimeException $error) {
                     $result['cloud'] = ['error' => $error->getMessage(), 'server_time' => $serverTime];

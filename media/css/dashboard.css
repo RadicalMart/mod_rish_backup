@@ -45,6 +45,14 @@
     width: 16%;
 }
 
+[data-rish-backup] [data-rish-cloud] .rish-backup-table {
+    min-width: 55rem;
+}
+
+[data-rish-backup] [data-rish-cloud] .rish-backup-table th:nth-child(3) {
+    width: 10rem;
+}
+
 [data-rish-backup] .rish-backup-table th,
 [data-rish-backup] .rish-backup-table td {
     padding: .5rem .75rem;
@@ -71,6 +79,10 @@
     margin: .5rem 0 0;
     color: var(--secondary-color, var(--bs-secondary-color, inherit));
     font-size: .875rem;
+}
+
+[data-rish-backup] [data-rish-cloud-row-status][data-state="ready"] {
+    white-space: nowrap;
 }
 
 [data-rish-backup] .rish-backup-status[data-state="failed"] {

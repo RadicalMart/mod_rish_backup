@@ -45,14 +45,18 @@ class Dispatcher extends AbstractModuleDispatcher
         $assets->registerAndUseStyle(
             'mod_rish_backup.dashboard',
             'mod_rish_backup/dashboard.css',
-            ['version' => '1.5.1.2']
+            ['version' => '1.5.1.4']
         );
         $assets->registerAndUseScript(
             'mod_rish_backup.dashboard',
             'mod_rish_backup/dashboard.js',
-            ['version' => '1.5.1.4'],
-            ['defer' => true]
+            ['version' => '1.5.1.8'],
+            ['type' => 'module'],
+            ['messages', 'joomla.dialog']
         );
+        Text::script('JYES');
+        Text::script('JNO');
+        Text::script('INFO');
 
         $labels = [];
 
@@ -72,6 +76,7 @@ class Dispatcher extends AbstractModuleDispatcher
         $labels['cloudLegacyEmpty'] = Text::_('MOD_RISH_BACKUP_CLOUD_LEGACY_EMPTY');
         $labels['cloudListOperation'] = Text::_('MOD_RISH_BACKUP_CLOUD_LIST_OPERATION');
         $labels['cloudFetchOperation'] = Text::_('MOD_RISH_BACKUP_CLOUD_FETCH_OPERATION');
+        $labels['cloudDownloaded'] = Text::_('MOD_RISH_BACKUP_CLOUD_DOWNLOADED');
         $labels['fetchSnapshot'] = Text::_('MOD_RISH_BACKUP_CLOUD_FETCH_LABEL');
         $labels['scheduleDaily'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_DAILY');
         $labels['scheduleCron'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_CRON');
