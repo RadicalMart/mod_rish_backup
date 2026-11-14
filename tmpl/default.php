@@ -52,7 +52,7 @@ endif;
             <p class="alert alert-warning mt-2 mb-0" data-rish-cloud-error role="alert" hidden></p>
             <p class="rish-backup-status" data-rish-cloud-legacy hidden><?= $escape(Text::_('MOD_RISH_BACKUP_CLOUD_LEGACY')) ?></p>
             <div class="table-responsive rish-backup-table-wrap" tabindex="0" role="group" aria-labelledby="<?= $escape($cloudListId) ?>">
-                <table class="table table-sm align-middle mb-0 rish-backup-table">
+                <table class="table table-sm table-bordered align-middle mb-0 rish-backup-table">
                     <thead>
                         <tr>
                             <th scope="col"><?= $escape(Text::_('MOD_RISH_BACKUP_EXPORT_DATE')) ?></th>
@@ -97,7 +97,7 @@ endif;
         <p class="rish-backup-status" data-rish-export-status role="status" hidden></p>
         <p class="rish-backup-status" data-rish-delete-status role="status" hidden></p>
         <div class="table-responsive rish-backup-table-wrap" tabindex="0" role="group" aria-labelledby="<?= $escape($exportListId) ?>">
-            <table class="table table-sm align-middle mb-0 rish-backup-table">
+            <table class="table table-sm table-bordered align-middle mb-0 rish-backup-table">
                 <thead>
                     <tr>
                         <th scope="col"><?= $escape(Text::_('MOD_RISH_BACKUP_EXPORT_DATE')) ?></th>

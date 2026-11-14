@@ -3,7 +3,7 @@
     <name>mod_rish_backup</name>
     <author>RISH</author>
     <creationDate>2026-11-14</creationDate>
-    <version>1.5.3</version>
+    <version>1.5.4</version>
     <description>MOD_RISH_BACKUP_XML_DESCRIPTION</description>
     <namespace path="src">Rish\Module\RishBackup</namespace>
     <files>

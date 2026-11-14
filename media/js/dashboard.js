@@ -104,6 +104,22 @@ import JoomlaDialog from 'joomla.dialog';
             }
         };
 
+        const notifySuccess = (anchor, completed) => {
+            if (completed.length === 0) {
+                return;
+            }
+
+            const messages = document.createElement('div');
+            messages.className = 'mt-3';
+            anchor.after(messages);
+            const text = document.createElement('span');
+            Joomla.renderMessages({ message: completed.map(job => {
+                text.textContent = job.message;
+                return text.innerHTML;
+            }) }, messages, false, notificationDuration);
+            messages.firstElementChild.addEventListener('joomla.alert.closed', () => messages.remove(), { once: true });
+        };
+
         const notifyLocalSuccess = (data) => {
             const jobs = [data.export, data.delete];
             const completed = jobs.filter((job, index) => {
@@ -114,20 +130,24 @@ import JoomlaDialog from 'joomla.dialog';
                         || previous.archive_id !== job.archive_id);
             });
             previousLocalJobs = jobs;
+            notifySuccess(deleteStatus, completed);
+        };
 
-            if (completed.length === 0) {
-                return;
+        const renderCreationStatus = (element, job, paused) => {
+            const retry = paused && !activeStates.has(job.state)
+                ? labels.retryAt.replace('%s', formatTimestamp(job.next_at))
+                : '';
+
+            if (job.state === 'ready') {
+                element.hidden = !retry;
+                element.dataset.state = job.state;
+                if (element.textContent !== retry) {
+                    element.textContent = retry;
+                }
+            } else {
+                element.hidden = job.state === 'idle';
+                renderStatus(element, job, undefined, retry);
             }
-
-            const messages = document.createElement('div');
-            messages.className = 'mt-3';
-            deleteStatus.after(messages);
-            const text = document.createElement('span');
-            Joomla.renderMessages({ message: completed.map(job => {
-                text.textContent = job.message;
-                return text.innerHTML;
-            }) }, messages, false, notificationDuration);
-            messages.firstElementChild.addEventListener('joomla.alert.closed', () => messages.remove(), { once: true });
         };
 
         const renderArchives = (archives, canDelete) => {
@@ -194,7 +214,7 @@ import JoomlaDialog from 'joomla.dialog';
             if (schedule.state === 'configured') {
                 message = schedule.jobs.map(({ expression, timezone }) => {
                     const daily = /^(\d{1,2}) (\d{1,2}) \* \* \*$/.exec(expression);
-                    const zone = timezone || labels.serverTimezone;
+                    const zone = timezone === 'Europe/Moscow' ? 'MSK' : timezone || labels.serverTimezone;
 
                     if (daily && Number(daily[1]) < 60 && Number(daily[2]) < 24) {
                         const time = daily[2].padStart(2, '0') + ':' + daily[1].padStart(2, '0');
@@ -205,11 +225,6 @@ import JoomlaDialog from 'joomla.dialog';
                 }).join(' · ');
             } else {
                 message = schedule.state === 'not_configured' ? labels.scheduleNotConfigured : labels.scheduleUnknown;
-            }
-
-            const checked = formatTimestamp(schedule.checked_at);
-            if (checked) {
-                message += ' · ' + labels.scheduleChecked.replace('%s', checked);
             }
 
             if (scheduleStatus.textContent !== message) {
@@ -343,24 +358,8 @@ import JoomlaDialog from 'joomla.dialog';
 
             backupButton.disabled = creating || backupPaused || !data.accepts_requests;
             exportButton.disabled = creating || exportPaused || !data.accepts_requests;
-            backupStatus.hidden = data.backup.state === 'idle';
-            const backupRetry = backupPaused && !activeStates.has(data.backup.state)
-                ? labels.retryAt.replace('%s', formatTimestamp(data.backup.next_at))
-                : '';
-            renderStatus(backupStatus, data.backup, undefined, backupRetry);
-            const exportRetry = exportPaused && !activeStates.has(data.export.state)
-                ? labels.retryAt.replace('%s', formatTimestamp(data.export.next_at))
-                : '';
-            if (data.export.state === 'ready') {
-                exportStatus.hidden = !exportRetry;
-                exportStatus.dataset.state = data.export.state;
-                if (exportStatus.textContent !== exportRetry) {
-                    exportStatus.textContent = exportRetry;
-                }
-            } else {
-                exportStatus.hidden = data.export.state === 'idle';
-                renderStatus(exportStatus, data.export, undefined, exportRetry);
-            }
+            renderCreationStatus(backupStatus, data.backup, backupPaused);
+            renderCreationStatus(exportStatus, data.export, exportPaused);
             disabled.hidden = data.accepts_requests;
             deleteStatus.hidden = ['idle', 'ready'].includes(data.delete.state);
             renderStatus(deleteStatus, data.delete);
@@ -414,8 +413,9 @@ import JoomlaDialog from 'joomla.dialog';
                     willRefresh = !activeStates.has(data.cloud.list?.state) && age >= cloudCacheLifetime;
                 }
 
-                if (data.backup.state === 'ready' && previousBackup
-                    && (activeStates.has(previousBackup.state) || data.backup.updated_at !== previousBackup.updated_at)) {
+                const backupCompleted = data.backup.state === 'ready' && previousBackup
+                    && (previousBackup.state !== 'ready' || data.backup.updated_at !== previousBackup.updated_at);
+                if (backupCompleted) {
                     refreshAfterBackup = data.backup.updated_at;
                 }
                 previousBackup = data.backup;
@@ -432,6 +432,9 @@ import JoomlaDialog from 'joomla.dialog';
                 }
 
                 render(data, willRefresh);
+                if (backupCompleted && data.backup.message) {
+                    notifySuccess(backupStatus, [data.backup]);
+                }
                 alert.hidden = true;
                 alert.textContent = '';
             } catch (error) {

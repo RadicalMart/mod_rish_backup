@@ -50,7 +50,7 @@ class Dispatcher extends AbstractModuleDispatcher
         $assets->registerAndUseScript(
             'mod_rish_backup.dashboard',
             'mod_rish_backup/dashboard.js',
-            ['version' => '1.5.1.8'],
+            ['version' => '1.5.3.1'],
             ['type' => 'module'],
             ['messages', 'joomla.dialog']
         );
@@ -82,7 +82,6 @@ class Dispatcher extends AbstractModuleDispatcher
         $labels['scheduleCron'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_CRON');
         $labels['scheduleNotConfigured'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_NOT_CONFIGURED');
         $labels['scheduleUnknown'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_UNKNOWN');
-        $labels['scheduleChecked'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_CHECKED');
         $labels['serverTimezone'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_SERVER_TIMEZONE');
         $labels['retryAt'] = Text::_('MOD_RISH_BACKUP_RETRY_AT');
 
