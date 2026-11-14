@@ -8,7 +8,9 @@ use Joomla\CMS\Application\CMSApplication;
 use Joomla\CMS\Dispatcher\AbstractModuleDispatcher;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Session\Session;
+use Joomla\CMS\Uri\Uri;
 use Rish\Module\RishBackup\Administrator\Service\BackupDirectoryService;
+use RuntimeException;
 
 defined('_JEXEC') or die;
 
@@ -32,13 +34,35 @@ class Dispatcher extends AbstractModuleDispatcher
             return false;
         }
 
-        $data['directoryAvailable'] = BackupDirectoryService::availablePath(
-            (string) $data['params']->get('job_directory', ''),
-            $data['app']->getInput()->server->getString('DOCUMENT_ROOT', '')
-        ) !== null;
-
-        if (!$data['directoryAvailable']) {
+        try {
+            $directory = BackupDirectoryService::fromConfiguration(
+                (string) $data['params']->get('job_directory', ''),
+                $data['app']->getInput()->server->getString('DOCUMENT_ROOT', '')
+            );
+        } catch (RuntimeException) {
+            $data['directoryAvailable'] = false;
             return $data;
+        }
+
+        $data['directoryAvailable'] = true;
+        $domain = basename($directory->path());
+
+        if ($directory->belongsToSite()) {
+            try {
+                $host = (string) Uri::getInstance()->getHost();
+            } catch (RuntimeException) {
+                $host = '';
+            }
+
+            if (filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) !== false) {
+                $domain = $host;
+            }
+        }
+
+        $module = $data['module'];
+        $suffix = ' — ' . $domain;
+        if (!str_ends_with($module->title, $suffix)) {
+            $module->title .= $suffix;
         }
 
         $assets = $data['app']->getDocument()->getWebAssetManager();
@@ -85,7 +109,7 @@ class Dispatcher extends AbstractModuleDispatcher
         $labels['serverTimezone'] = Text::_('MOD_RISH_BACKUP_SCHEDULE_SERVER_TIMEZONE');
         $labels['retryAt'] = Text::_('MOD_RISH_BACKUP_RETRY_AT');
 
-        $moduleId = (int) $data['module']->id;
+        $moduleId = (int) $module->id;
         $data['labels'] = $labels;
         $data['ajaxUrl'] = 'index.php?option=com_ajax&module=rish_backup&module_id=' . $moduleId;
         $data['exportListId'] = 'rish-backup-local-' . $moduleId;
